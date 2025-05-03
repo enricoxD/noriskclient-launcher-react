@@ -10,6 +10,7 @@ jobs:
   publish-tauri:
     permissions:
       contents: write # Required to create a release
+      actions: read # Required to fetch release information
     strategy:
       fail-fast: false
       matrix:
@@ -66,3 +67,66 @@ jobs:
           releaseDraft: false # Creates a draft release. Set to false to publish immediately.
           prerelease: true # Mark as prerelease so it's not considered the "latest" release
           args: ${{ matrix.args }}
+
+  create-release-info:
+    needs: publish-tauri
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to update releases
+    steps:
+      - name: Fetch latest staging release info
+        id: fetch-release
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: string
+          script: |
+            // Get the latest staging (prerelease) release
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: 'noriskclient',
+              repo: 'noriskclient-launcher'
+            });
+
+            const stagingRelease = releases.find(release => release.prerelease && release.tag_name.startsWith('staging-'));
+            if (!stagingRelease) {
+              console.log('No staging release found');
+              return '';
+            }
+
+            console.log(`Found staging release: ${stagingRelease.tag_name} (ID: ${stagingRelease.id})`);
+            const fs = require('fs');
+            fs.writeFileSync('latest-staging.json', JSON.stringify(stagingRelease, null, 2));
+            return stagingRelease.tag_name;
+
+      - name: Find latest main release
+        id: find-release
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: string
+          script: |
+            // Get the latest non-prerelease release (main release)
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: 'noriskclient',
+              repo: 'noriskclient-launcher'
+            });
+
+            const mainRelease = releases.find(release => !release.prerelease);
+            if (!mainRelease) {
+              console.log('No main release found');
+              return '';
+            }
+
+            console.log(`Found main release: ${mainRelease.tag_name} (ID: ${mainRelease.id})`);
+            return mainRelease.upload_url;
+
+      - name: Upload release info to main release
+        if: steps.fetch-release.outputs.result != '' && steps.find-release.outputs.result != ''
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.find-release.outputs.result }}
+          asset_path: ./latest-staging.json
+          asset_name: latest-staging.json
+          asset_content_type: application/json
