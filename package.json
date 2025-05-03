@@ -1,6 +1,6 @@
 {
   "name": "noriskclient-launcher-v3",
-  "version": "0.1.0",
+  "version": "0.1.1-dev",
   "description": "",
   "type": "module",
   "scripts": {
