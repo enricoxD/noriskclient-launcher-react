@@ -63,6 +63,6 @@ jobs:
           tagName: app-v__VERSION__ # The action automatically replaces __VERSION__ with the app version from tauri.conf.json
           releaseName: 'App v__VERSION__'
           releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true # Creates a draft release. Set to false to publish immediately.
+          releaseDraft: false # Creates a draft release. Set to false to publish immediately.
           prerelease: false
           args: ${{ matrix.args }} 

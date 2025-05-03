@@ -63,6 +63,6 @@ jobs:
           tagName: staging-v__VERSION__ # Different tag format for staging releases
           releaseName: 'Staging v__VERSION__'
           releaseBody: 'This is a staging release. See the assets to download this version and install.'
-          releaseDraft: true # Creates a draft release. Set to false to publish immediately.
+          releaseDraft: false # Creates a draft release. Set to false to publish immediately.
           prerelease: true # Mark as prerelease so it's not considered the "latest" release
           args: ${{ matrix.args }}
